@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Miracle's post Homepage</title>
+</head>
+
+<body>
+  <h1 align="center">Welcome to Miracle's post Homepage</h1>
+
+  <h3 align="center">To Login / Sign up, Click <a href="/users/login">here</a></h3>
+  <hr><br>
+  <form align="right" action="/posts" method="GET">
+    <label for="search">Search:</label>
+    <input type="text" name="search" id="search" placeholder="Search posts...">
+    <button type="submit">Search</button>
+  </form>
+  <hr>
+  <% if (post && post.length > 0) { %>
+  <ul align="center">
+    <% post.forEach(postItem => { %>
+    <li>
+      <h2><a href="/posts/<%= postItem._id %>"><%= postItem.title %></a></h2>
+      <p>Description: <%= postItem.description %></p>
+      <p>Published Date: <%= postItem.timestamp %></p>
+      <p>Author:<a href="/users/<%= postItem.author %>"><%= postItem.author %></a></p>
+    </li>
+    <% }); %>
+  </ul>
+
+  <div>
+    <p>Page <%= currentPage %> of <%= totalPages %></p>
+    <p>Total posts: <%= total %></p>
+    <% if (currentPage > 1) { %>
+    <a href="?page=<%= currentPage - 1 %>">Previous</a>
+    <% } %>
+    <% if (currentPage < totalPages) { %>
+    <a href="?page=<%= currentPage + 1 %>">Next</a>
+    <% } %>
+  </div>
+  <% } else { %>
+  <p>No published posts available.</p>
+  <% } %>
+
+</body>
+
+</html>
