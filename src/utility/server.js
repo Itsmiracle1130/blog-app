@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const router = require("../router/router.js");
 const cors = require("cors");
+const requestLogger = require("../middleware/requestLogger.js");
 
 const server = () => {
 	const app = express();
@@ -15,17 +16,18 @@ const server = () => {
 	app.use(cookieParser());
 	app.use(bodyParser.urlencoded({ extended: true }));
 	app.use(bodyParser.json());
+	app.use("/", requestLogger);
 
 	app.use(cors());
+	
+	app.use("/", router);
 
 	app.get("/", (req, res) => {
 		res.clearCookie("token");
 		res.render("homepage");
-	});
-    
-	app.use("/", router);
+	});    
 	
-	app.use((req, res) => res.status(404).json({}));
+	app.use((req, res) => res.status(404).render("404"));
 
 	return app;
 };

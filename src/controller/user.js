@@ -84,6 +84,33 @@ const userLogin = async (req, res) => {
 	}
 };
 
+const viewUser = async (req, res) => {
+	const { userId } = req.params;
+
+	try {
+		const user = await models.user.findById({ userId });
+
+		if (!user) {
+			return res.status(404).json({
+				status: false,
+				message: "User not found"
+			});
+		}
+
+		return res.status(200).json({
+			status: true,
+			message: "User located",
+			data: user, userId
+		});
+	} catch (error) {
+		logger.error(`Error locating user: ${error.message}`);
+		return res.status(500).send({
+			status: false,
+			message: "Internal server error"
+		});
+	}
+};
+
 const logout = async (req, res) => {
 	try {
 		res.clearCookie("token");
@@ -99,5 +126,5 @@ const logout = async (req, res) => {
 };
 
 module.exports = {
-	userSignup, userLogin, logout
+	userSignup, userLogin, viewUser, logout
 };

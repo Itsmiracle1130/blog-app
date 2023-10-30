@@ -25,7 +25,7 @@ const createPost = async(req, res) => {
 			reading_time: calculateReadTime(value.body)
 		});
 		// render views
-		return res.status(201).json({
+		return res.status(201).render("dashboard")({
 			status: true,
 			message: "Post created",
 			data: createdPost
