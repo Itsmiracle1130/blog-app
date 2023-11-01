@@ -1,23 +1,43 @@
 const express = require("express");
-const {createPost, viewOnePost, viewPosts, viewAllPostsById, updatePost, deletePost} = require("../controller/post.js");
+const {createPost, viewOnePost, viewPosts, updatePost, deletePost, ownerPost, readOwnerSinglePost, updatePrefill} = require("../controller/post.js");
 const {verifyToken} = require("../middleware/authenticate.js");
+const { splitTags } = require("../utility/readTime.js");
 
 const router = express.Router();
 
-router.post("/", verifyToken, createPost, viewPosts);
+router.post("/", verifyToken, splitTags, createPost, viewPosts);
 
-router.get("/", viewAllPostsById);
-
-router.get("/posts", (req, res) => {
-	res.render("homepage");
+router.get("/create", (req, res) => {
+	res.render("createPost");
 });
 
-router.get("/:postId", viewOnePost);
+router.get("/", async (req, res) => {
+	try {
+		const response = await viewPosts(req);
+		return res.status(200).render("viewPosts", ({
+			total: response.total,
+			totalPages: response.totalPages,
+			currentPage: response.currentPage,
+			posts: response.posts,
+		}));
+	} catch (error) {
+		return res.status(500).json({
+			status: false,
+			message: "Internal server error",
+		});
+	}
+});
 
-router.get("/update/:postId", updatePost);
+router.get("/:postId",verifyToken, viewOnePost);
 
-router.post("/update/:postId", updatePost);
+router.get("/owner/author", verifyToken, ownerPost);
 
-router.get("/delete/:postId", deletePost);
+router.get("/owner/author/:blogId", verifyToken, readOwnerSinglePost);
+
+router.get("/update/:postId", verifyToken, updatePrefill);
+
+router.post("/update/:postId", verifyToken, updatePost);
+
+router.get("/delete/:postId", verifyToken, deletePost);
 
 module.exports = router;

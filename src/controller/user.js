@@ -1,4 +1,4 @@
-const {validateUserInfo} = require("../validation/user");
+const {validateUserSignup, validateUserLogin} = require("../validation/user");
 const models = require("../models/model");
 const bcrypt = require("bcrypt");
 const logger = require("../utility/logger");
@@ -6,7 +6,7 @@ const { createToken } = require("../utility/jwt.js");
 
 const userSignup = async (req, res) => {
 	try {
-		const { error, value } = validateUserInfo(req.body);
+		const { error, value } = validateUserSignup(req.body);
 		if(error) {
 			return res.status(400).send({
 				status: false,
@@ -27,12 +27,10 @@ const userSignup = async (req, res) => {
 			email: value.email,
 			password: hashedPassword
 		});
-		// render views
-		return res.status(201).json({
-			status: true,
-			message: "Account successfully created",
-			data: createdUser
-		});
+		console.log("working");
+		return res.status(201).render("login", ({
+			createdUser
+		}));
 	} catch (error) {
 		console.error(error.message);
 		return res.status(500).send({
@@ -44,7 +42,7 @@ const userSignup = async (req, res) => {
 
 const userLogin = async (req, res) => {
 	try {
-		const { error, value } = validateUserInfo(req.body);
+		const { error, value } = validateUserLogin(req.body);
 		if(error) {
 			return res.status(400).send({
 				status: false,
@@ -60,7 +58,6 @@ const userLogin = async (req, res) => {
 		}
 		const passwordCompare = await bcrypt.compare(value.password, existingUser.password);
 		if(!passwordCompare) {
-			// render views
 			return res.status(404).send({
 				status: false,
 				message: "Invalid username or password"
@@ -69,12 +66,9 @@ const userLogin = async (req, res) => {
 		const token = await createToken({ id: existingUser.id, email: existingUser.email});
 		const user = await models.user.findOne({ email: value.email }).select("-password");
 		res.cookie("token", token, { httpOnly: true });
-		// render views
-		return res.status(200).json({
-			status: true,
-			message: "Login Successful",
-			data: { token, user }
-		});
+		return res.status(200).render("dashboard", ({
+			user, token
+		}));
 	} catch (error) {
 		console.error(error.message);
 		return res.status(500).send({
@@ -97,11 +91,9 @@ const viewUser = async (req, res) => {
 			});
 		}
 
-		return res.status(200).json({
-			status: true,
-			message: "User located",
-			data: user, userId
-		});
+		return res.status(200).render("viewProfile", ({
+			userId: user._id, user, posts: user.posts.length
+		}));
 	} catch (error) {
 		logger.error(`Error locating user: ${error.message}`);
 		return res.status(500).send({
@@ -114,8 +106,7 @@ const viewUser = async (req, res) => {
 const logout = async (req, res) => {
 	try {
 		res.clearCookie("token");
-		// render
-		return res.status(440).render(".....");
+		return res.status(440).render("login");
 	} catch (error) {
 		logger.error(`Logout error: ${error.message}`);
 		return res.status(500).send({

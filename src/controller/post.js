@@ -2,7 +2,6 @@ const {validatePostData} = require("../validation/post");
 const models = require("../models/model");
 const { calculateReadTime } = require("../utility/readTime.js");
 const logger = require("../utility/logger");
-const post = require("../models/post");
 
 const createPost = async(req, res) => {
 	const username = req.user;
@@ -16,7 +15,7 @@ const createPost = async(req, res) => {
 				message: "Invalid post"
 			});
 		}
-		const createdPost = await models.post.create({
+		const post = await models.post.create({
 			title: value.title,
 			description: value.description,
 			body: value.body,
@@ -24,12 +23,9 @@ const createPost = async(req, res) => {
 			author: user._id,
 			reading_time: calculateReadTime(value.body)
 		});
-		// render views
-		return res.status(201).render("dashboard")({
-			status: true,
-			message: "Post created",
-			data: createdPost
-		});
+		return res.status(201).render("viewPost", ({
+			post, user, postId: post._id
+		}));
 	} catch (error) {
 		console.error("Error creating post");
 		res.status(500).send({
@@ -56,12 +52,11 @@ const viewOnePost = async(req, res) => {
 				message: "Invalid Post Id"
 			});
 		}
-		// render
-		return res.status(200).render("...", ({
-			post, postId
+		return res.status(200).render("viewPost", ({
+			post, postId, author: post.author
 		}));
 	} catch (error) {
-		logger.error(`Error reading blog: ${error.message}`);
+		logger.error(`Error reading post: ${error.message}`);
 		return res.status(500).send({
 			status: false,
 			message: "Internal server error"
@@ -69,97 +64,56 @@ const viewOnePost = async(req, res) => {
 	}
 };
 
-const viewPosts = async(req, res) => {
-	let { page, limit, order, orderBy, search } = req.query;
-
-	try {
-		page = page || 1;
-		limit = limit || 15;
-
-		const startIndex = (page - 1) * limit;
-		const endIndex = page * limit;
+const viewPosts = async (req) => {
+	let { page, limit, search, order, orderBy } = req.query;
+	page = page || 1;
+	limit = limit || 20;
+	
+	const startIndex = (page - 1) * limit;
+	const endIndex = page * limit;
+	
+	let query = { state: "published", deleted: false };
   
-		let query = {};
-
-		if (search) {
-			query.$or = [
-				{ title: { $regex: search, $options: "i" } },
-				{ author: { $regex: search, $options: "i" } },
-				{ tags: { $regex: search, $options: "i" } },
-			];
-		}
-
-		let sort = {};
-		if (order && orderBy) {
-			if (orderBy === "readCount" || orderBy === "readTime" || orderBy === "timestamp") {
-				sort[orderBy] = order === "asc" ? 1 : -1;
-			}
-		}
-		
-		
-
-		const post = await models.post.find(query)
-			.sort(sort)
-			.limit(endIndex)
-			.skip(startIndex)
-			.exec();
-		
-		if (post.length < 1) {
-			return res.status(204).send({
-				status: true,
-				message: "No data"
-			});
-		}
-
-		const count = await models.post.countDocuu(query);	
-		const totalPages = Math.ceil(count / limit);
-		const total = post.length;
-		
-		// render views
-		return res.status(200).json({
-			status: true,
-			message: "",
-			data: {
-				total,
-				totalPages,
-				currentPage: page,
-				post
-			}
-		});
-        
-	} catch (error) {
-		console.error("Error reading task", error.message);
-		res.status(500).send({
-			status: false,
-			message: "Internal server error"
-		});
+	if (search) {
+		const searchRegex = new RegExp(search, "i");
+		query.$or = [
+			{ title: { $regex: searchRegex } },
+			{ author: { $regex: searchRegex } },
+			{ tags: { $elemMatch: { $regex: searchRegex } } } 
+		];
 	}
-};
-
-const viewAllPostsById = async (req, res) => {
-	try {
-		const { postId } = req.params;
-		const post = await models.post.findOne({ _id: postId }, { state: "published"});
-		if (!post) {
-			return res.status(404).json({
-				status: false,
-				message: "Post not found"
-			});
+  
+	let sort = {};
+	if (order && orderBy) {
+		if (orderBy === "read_count" || orderBy === "reading_time" || orderBy === "timestamp") {
+			sort[orderBy] = order === "asc" ? 1 : -1;
 		}
-		post.readCount += 1;
-		const result = await post.save();
-		return res.status(200).json({
-			status: true,
-			message: "post fetched successfully",
-			data: result
-		});
-	} catch (error) {
-		console.error("Error reading task", error.message);
-		res.status(500).send({
-			status: false,
-			message: "Internal server error"
-		});
 	}
+	
+	const posts = await models.post.find(query)
+		.sort(sort)
+		.limit(endIndex)
+		.skip(startIndex)
+		.exec();
+	
+	if (posts.length < 1) {
+		return {
+			status: true,
+			message: "No content",
+		};
+	}
+	
+	const count = await models.post.countDocuments(query);
+	
+	const totalPages = Math.ceil(count / limit);
+	const total = posts.length;
+	
+	return {
+		total,
+		totalPages,
+		currentPage: page,
+		posts
+	};
 };
 
 const updatePost = async (req, res) => {
@@ -174,23 +128,143 @@ const updatePost = async (req, res) => {
 				message: "Post not found"
 			});
 		}
-	  	if (post.user_id.toString() != id) {
-	  		return res.status(401).send({
+		if (post.user_id.toString() != id) {	
+			return res.status(401).send({
 				status: false,
 				message: "Unauthorized user"
 			});
-	  	}
+		}
 		post.state = "published";
 	
 		const result = await post.save();
-		return res.status(200).json({
-			status: true,
-			message: "Update successful",
-			data: result
-		});
+		return res.status(200).render("viewPost", ({
+			postId,
+			post: result
+		}));
 	} catch (error) {
 		console.error("Error reading task", error.message);
 		res.status(500).send({
+			status: false,
+			message: "Internal server error"
+		});
+	}
+};
+
+const updatePrefill = async(req, res) => {
+	const { postId } = req.params;
+	const { username } = req.user;
+	try {
+		const post = await models.post.findOne({ _id: postId });
+		if (!post) {
+			return res.status(404).json({
+				status: false,
+				message: "post not found"
+			});
+		}
+		if (post.deleted) {
+			return res.status(204).json({
+				status: false,
+				message: "Invalid Post Id"
+			});
+		}
+		if (username !== post.author) {
+			return res.status(403).json({
+				status: false,
+				message: "You can not update this post unauthorized"
+			});
+		}
+
+		return res.status(200).render("update", ({
+			post, postId, author: username
+		}));
+	} catch (error) {
+		logger.error(`Error fetching post: ${error.message}`);
+		return res.status(500).json({
+			status: false,
+			message: "Internal server error",
+		});
+	}
+};
+
+const ownerPost = async (req, res) => {
+	const { username } = req.user;
+	let { page, limit, state } = req.query;
+	
+	try {
+		page = page || 1;
+		limit = limit || 20;
+  
+		const startIndex = (page - 1) * limit;
+		const endIndex = page * limit;
+  
+		let query = { username };
+
+		if (state) {
+			if (state === "draft" || state === "published") {
+				query.state = state;
+			}
+		}
+
+		const posts = await models.post.find(query)
+			.limit(endIndex)
+			.skip(startIndex)
+			.exec();
+  
+		if (posts.length < 1) {
+			return res.status(204).json({
+				status: true,
+				message: "No content",
+			});
+		}
+  
+		const count = await models.post.countDocuments(query);
+  
+		const totalPages = Math.ceil(count / limit);
+		const total = posts.length;
+  
+		return res.status(200).render("viewPosts", {
+			total,
+			totalPages,
+			currentPage: page,
+			posts
+		});
+	} catch (error) {
+		logger.error(`Error fetching posts: ${error.message}`);
+		return res.status(500).json({
+			status: false,
+			message: "Internal server error",
+		});
+	}
+};
+
+const readOwnerSinglePost = async(req, res) => {
+	const { username } = req.user;
+	const { postId } = req.params;
+
+	try {
+		const post = await models.post.findById(postId);
+		if (!post) {
+			return res.status(404).json({
+				status: false,
+				message: "Post not found"
+			});
+		}
+		if (post.deleted) {
+			return res.status(204).json({
+				status: false,
+				message: "Invalid Post Id"
+			});
+		}
+
+		post.readCount++;
+		await post.save();
+
+		return res.status(200).render("viewPost", ({
+			post, postId, author: username
+		}));
+	} catch (error) {
+		logger.error(`Error reading post: ${error.message}`);
+		return res.status(500).json({
 			status: false,
 			message: "Internal server error"
 		});
@@ -211,10 +285,10 @@ const deletePost = async (req, res) => {
 		if (post.user_id.toString() != id) {
 			return res.status(401).send({
 				status: false,
-				message: "Unauthorized user"
+				message: "Unauthorized User"
 			});
 		}
-		const deletedPost = await post.findByIdAndDelete(post);
+		await post.findByIdAndDelete(post);
 		return res.status(200).json({
 			status: true,
 			message: "Post deleted successfully",
@@ -231,6 +305,6 @@ const deletePost = async (req, res) => {
 };
 
 module.exports = {
-	createPost, viewOnePost, viewPosts, viewAllPostsById, updatePost, deletePost
+	createPost, viewOnePost, viewPosts, updatePost, deletePost, ownerPost, readOwnerSinglePost, updatePrefill
 };
 

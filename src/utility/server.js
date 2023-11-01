@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const router = require("../router/router.js");
 const cors = require("cors");
 const requestLogger = require("../middleware/requestLogger.js");
+const { viewPosts } = require("../controller/post.js");
 
 const server = () => {
 	const app = express();
@@ -22,9 +23,15 @@ const server = () => {
 	
 	app.use("/", router);
 
-	app.get("/", (req, res) => {
+	app.get("/", async (req, res) => {
 		res.clearCookie("token");
-		res.render("homepage");
+		const response = await viewPosts(req);
+		return res.status(200).render("homepage", {
+			total: response.total,
+			totalPages: response.totalPages,
+			currentPage: response.currentPage,
+			posts: response.posts,
+		});
 	});    
 	
 	app.use((req, res) => res.status(404).render("404"));

@@ -10,20 +10,20 @@
 
   <h3 align="center">To Login / Sign up, Click <a href="/users/login">here</a></h3>
   <hr><br>
-  <form align="right" action="/posts" method="GET">
+  <form align="right" action="/" method="GET">
     <label for="search">Search:</label>
     <input type="text" name="search" id="search" placeholder="Search posts...">
     <button type="submit">Search</button>
   </form>
   <hr>
-  <% if (post && post.length > 0) { %>
+  <% if (posts && posts.length > 0) { %>
   <ul align="center">
-    <% post.forEach(postItem => { %>
+    <% posts.forEach(post => { %>
     <li>
-      <h2><a href="/posts/<%= postItem._id %>"><%= postItem.title %></a></h2>
-      <p>Description: <%= postItem.description %></p>
-      <p>Published Date: <%= postItem.timestamp %></p>
-      <p>Author:<a href="/users/<%= postItem.author %>"><%= postItem.author %></a></p>
+      <h2><a href="/posts/<%= post._id %>"><%= post.title %></a></h2>
+      <p>Description: <%= post.description %></p>
+      <p>Published Date: <%= post.createdAt %></p>
+      <p>Author:<a href="/users/<%= post.author %>"><%= post.author %></a></p>
     </li>
     <% }); %>
   </ul>

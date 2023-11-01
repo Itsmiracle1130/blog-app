@@ -15,7 +15,7 @@ router.get("/dashboard", (req, res) => {
 	res.render("dashboard");
 });
 
-router.post("/signup", userSignup);
+router.post("/", userSignup);
 
 router.post("/login", userLogin);
 

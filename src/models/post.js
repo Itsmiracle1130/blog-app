@@ -31,8 +31,8 @@ const postModel = new schema ({
 		type: [String]
 	}, 
 	author: {
-		type: schema.Types.ObjectId,
-		ref: "user"
+		type: String,
+		required: true
 	}
 }, {timestamps: true});
 

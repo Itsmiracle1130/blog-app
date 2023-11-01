@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>My Posts</title>
+</head>
+
+<body>
+  <h1>My Posts</h1>
+  <hr>
+
+  <form align="right" action="/posts" method="GET">
+    <label for="search">Search:</label>
+    <input type="text" name="search" id="search" placeholder="Search posts...">
+    <button type="submit">Search</button>
+  </form>
+  <hr>
+
+  <% if (posts.length > 0) { %>
+  <ul>
+    <% posts.forEach(post => { %>
+    <li>
+      <strong>Title:</strong> <%= post.title %><br>
+      <strong>Status:</strong> <%= post.state %><br>
+      <a href="/posts/owner/author/<%= post._id %>">View post</a>
+      <hr>
+    </li>
+    <% }); %>
+  </ul>
+
+  <div>
+    <strong>Total posts:</strong> <%= total %><br>
+    <strong>Total Pages:</strong> <%= totalPages %><br>
+    <strong>Current Page:</strong> <%= currentPage %>
+  </div>
+
+  <div>
+    <% if (currentPage > 1) { %>
+    <a href="?page=<%= currentPage - 1 %>">Previous Page</a>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+    <a href="?page=<%= currentPage + 1 %>">Next Page</a>
+    <% } %>
+  </div>
+  <% } else { %>
+  <p>No posts available.</p>
+  <% } %>
+
+  <a href="/">Back to Homepage</a>
+</body>
+
+</html>
