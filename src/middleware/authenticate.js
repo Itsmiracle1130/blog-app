@@ -48,7 +48,9 @@ const verifyToken = async (req, res, next) => {
 		}
 
 		req.user = user;
-		return next();
+
+		next();
+		
 	} catch (error) {
 		return res.status(500).send({
 			status: false,

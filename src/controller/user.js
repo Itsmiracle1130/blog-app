@@ -13,7 +13,13 @@ const userSignup = async (req, res) => {
 				message: error.message
 			});
 		}
-		const existingUser = await models.user.findOne({ email: value.email });
+		const existingUser = await models.user.findOne({
+			$or: [{
+				email: value.email
+			}, {
+				username: value.username
+			}]
+		});
 		if(existingUser) {
 			return res.status(409).send({
 				status: false,
@@ -25,9 +31,9 @@ const userSignup = async (req, res) => {
 			firstName: value.firstName,
 			lastName: value.lastName,
 			email: value.email,
+			username: value.username,
 			password: hashedPassword
 		});
-		console.log("working");
 		return res.status(201).render("login", ({
 			createdUser
 		}));
@@ -49,7 +55,13 @@ const userLogin = async (req, res) => {
 				message: error.message
 			});
 		}
-		const existingUser = await models.user.findOne({ email: value.email });
+		const existingUser = await models.user.findOne({
+			$or: [{
+				email: value.emailUsername
+			}, {
+				username: value.emailUsername
+			}]
+		});
 		if(!existingUser) {
 			return res.status(404).send({
 				status: false,
@@ -63,8 +75,8 @@ const userLogin = async (req, res) => {
 				message: "Invalid username or password"
 			});
 		}
-		const token = await createToken({ id: existingUser.id, email: existingUser.email});
-		const user = await models.user.findOne({ email: value.email }).select("-password");
+		const token = await createToken({ id: existingUser.id, username: existingUser.username, email: existingUser.email});
+		const user = await models.user.findOne({ email: existingUser.email }).select("-password");
 		res.cookie("token", token, { httpOnly: true });
 		return res.status(200).render("dashboard", ({
 			user, token
@@ -79,10 +91,10 @@ const userLogin = async (req, res) => {
 };
 
 const viewUser = async (req, res) => {
-	const { userId } = req.params;
+	const { username } = req.params;
 
 	try {
-		const user = await models.user.findById({ userId });
+		const user = await models.user.findById({ username });
 
 		if (!user) {
 			return res.status(404).json({
@@ -92,7 +104,7 @@ const viewUser = async (req, res) => {
 		}
 
 		return res.status(200).render("viewProfile", ({
-			userId: user._id, user, posts: user.posts.length
+			user, posts: user.posts.length
 		}));
 	} catch (error) {
 		logger.error(`Error locating user: ${error.message}`);

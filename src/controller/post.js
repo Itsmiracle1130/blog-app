@@ -4,15 +4,15 @@ const { calculateReadTime } = require("../utility/readTime.js");
 const logger = require("../utility/logger");
 
 const createPost = async(req, res) => {
-	const username = req.user;
+	const {username} = req.user;
 
 	try {
-		const user = await models.user.findOne(username);
+		const user = await models.user.findOne({username});
 		const {error, value} = validatePostData(req.body);
 		if (error) {
 			res.status(400).send({
 				status: false,
-				message: "Invalid post"
+				message: error.message
 			});
 		}
 		const post = await models.post.create({
@@ -20,14 +20,16 @@ const createPost = async(req, res) => {
 			description: value.description,
 			body: value.body,
 			tags: value.tags,
-			author: user._id,
-			reading_time: calculateReadTime(value.body)
-		});
+			author: user._id.toString(),
+			readingTime: calculateReadTime(value.body)
+		}); 
+		post.readCount += 1;
+		
 		return res.status(201).render("viewPost", ({
-			post, user, postId: post._id
+			post
 		}));
 	} catch (error) {
-		console.error("Error creating post");
+		console.error("Error creating post", error);
 		res.status(500).send({
 			status: false,
 			message: "Internal server error"
@@ -39,8 +41,9 @@ const viewOnePost = async(req, res) => {
 	const { postId } = req.params;
 
 	try {
-		const post = await models.post.findOne({ _id: postId }, { state: "published"});
-		if (!post) {
+		const post = await models.post.findOne({postId});
+
+		if (!post || post.state === "draft") {
 			return res.status(404).json({
 				status: false,
 				message: "Post not found"
@@ -117,24 +120,24 @@ const viewPosts = async (req) => {
 };
 
 const updatePost = async (req, res) => {
+	const { username } = req.user;
+	const { postId } = req.params;
 	try {
-		const { id } = req.user;
-		const { postId } = req.params;
-		const post = await models.post.findOne({ _id: postId }, { state: "published"});
-
+		const post = await models.post.findOne({ _id: postId, author: username });
+		
 		if (!post) {
 			return res.status(404).json({
 				status: false,
 				message: "Post not found"
 			});
 		}
-		if (post.user_id.toString() != id) {	
+		if (username !== post.author) {	
 			return res.status(401).send({
 				status: false,
 				message: "Unauthorized user"
 			});
 		}
-		post.state = "published";
+		// post.state = "published";
 	
 		const result = await post.save();
 		return res.status(200).render("viewPost", ({
@@ -242,8 +245,9 @@ const readOwnerSinglePost = async(req, res) => {
 	const { postId } = req.params;
 
 	try {
-		const post = await models.post.findById(postId);
+		const post = await models.user.findById(postId);
 		if (!post) {
+			
 			return res.status(404).json({
 				status: false,
 				message: "Post not found"
@@ -272,17 +276,17 @@ const readOwnerSinglePost = async(req, res) => {
 };
 
 const deletePost = async (req, res) => {
+	const { username } = req.user;
+	const { postId } = req.params;
 	try {
-		const { id } = req.user;
-		const { postId } = req.params;
-		const post = await models.post.findOne({ _id: postId });
+		const post = await models.post.findOne({ _id: postId, author: username });
 		if (!post) {
 			return res.status(404).json({
 				status: false,
 				message: "Post not found"
 			});
 		}
-		if (post.user_id.toString() != id) {
+		if (username != post.author) {
 			return res.status(401).send({
 				status: false,
 				message: "Unauthorized User"

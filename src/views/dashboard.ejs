@@ -2,20 +2,20 @@
 <html>
 
 <head>
-  <title>Hi <%= user.firstName %>, Welcome to your Blog Homepage</title>
+  <title>Hi <%= user.username %>, Welcome to your Blog Homepage</title>
 </head>
 
 <body>
-  <h1 align="center">Hi, <%= user.firstName %></h1>
+  <h1 align="center">Hi, <%= user.username %></h1>
   <p align="center">Welcome to your Blog Homepage page</p><br>
 
   <p align="center">Explore and have fun</p>
   <ul align="center">
     <li><a href="/posts/create/">Create an article</a></li>
-    <li><a href="/posts">View all articles</a></li>
-    <li><a href="/posts/<%= user._id %>">Get all your posted articles here</a></li>
-    <li><a href="/posts?state=draft">View drafts</a></li>
-    <li><a href="/tasks?state=published">View all published articles</a></li>
+    <li><a href="/posts/">View all articles</a></li>
+    <li><a href="/posts/owner/author">Get all your posted articles here</a></li>
+    <li><a href="/posts/owner/author?state=draft">View drafts</a></li>
+    <li><a href="/posts/owner/author?state=published">View all published articles</a></li>
     <li><a href="/users/logout">Logout</a></li>
   </ul>
 </body>

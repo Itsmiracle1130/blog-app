@@ -19,7 +19,7 @@ router.post("/", userSignup);
 
 router.post("/login", userLogin);
 
-router.get("/userId", viewUser);
+router.get("/:userId", viewUser);
 
 router.get("/logout", logout);
 

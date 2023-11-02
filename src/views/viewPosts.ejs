@@ -16,13 +16,13 @@
   </form>
   <hr>
 
-  <% if (posts.length > 0) { %>
+  <% if (total > 0) { %>
   <ul>
     <% posts.forEach(post => { %>
     <li>
       <strong>Title:</strong> <%= post.title %><br>
       <strong>Status:</strong> <%= post.state %><br>
-      <a href="/posts/owner/author/<%= post._id %>">View post</a>
+      <a href="/posts/<%= post._id %>">View post</a>
       <hr>
     </li>
     <% }); %>

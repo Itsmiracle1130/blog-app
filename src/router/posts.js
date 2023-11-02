@@ -5,7 +5,7 @@ const { splitTags } = require("../utility/readTime.js");
 
 const router = express.Router();
 
-router.post("/", verifyToken, splitTags, createPost, viewPosts);
+router.post("/", verifyToken, splitTags, createPost);
 
 router.get("/create", (req, res) => {
 	res.render("createPost");
@@ -28,11 +28,11 @@ router.get("/", async (req, res) => {
 	}
 });
 
-router.get("/:postId",verifyToken, viewOnePost);
+router.get("/:postId", viewOnePost);
 
 router.get("/owner/author", verifyToken, ownerPost);
 
-router.get("/owner/author/:blogId", verifyToken, readOwnerSinglePost);
+router.get("/owner/author/:postId", verifyToken, readOwnerSinglePost);
 
 router.get("/update/:postId", verifyToken, updatePrefill);
 
