@@ -81,7 +81,7 @@ const viewPosts = async (req) => {
 	const startIndex = (page - 1) * limit;
 	const endIndex = page * limit;
 	
-	let query = { state: "published" };
+	let query = { state: "published", deleted: false };
 	
 	if (search) {
 		const searchRegex = new RegExp(search, "i");
@@ -293,25 +293,26 @@ const deletePost = async (req, res) => {
 	const { username } = req.user;
 	const { postId } = req.params;
 	try {
-		const post = await models.post.findOne({ _id: postId, author: username });
+		const post = await models.post.findOne({ _id: postId });
 		if (!post) {
 			return res.status(404).json({
 				status: false,
-				message: "Post not found"
+				message: "post not found"
 			});
 		}
-		if (username != post.author) {
-			return res.status(401).send({
+		if (post.deleted) {
+			return res.status(204).json({
 				status: false,
-				message: "Unauthorized User"
+				message: "Invalid post Id"
 			});
 		}
-		await post.findByIdAndDelete(post);
-		return res.status(200).json({
-			status: true,
-			message: "Post deleted successfully",
-			data: postId
-		});
+		if (username !== post.author) {
+			return res.status(403).json({
+				status: false,
+				message: "You are unauthorized to delete this post"
+			});
+		}
+		await models.post.updateOne({ _id: post._id}, { deleted: true});
 	
 	} catch (error) {
 		console.error(error.message);

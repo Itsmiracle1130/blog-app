@@ -33,6 +33,10 @@ const postModel = new schema ({
 	author: {
 		type: String,
 		required: true
+	},
+	deleted: {
+		type: Boolean,
+		default: false
 	}
 }, {timestamps: true});
 
