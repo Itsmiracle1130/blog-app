@@ -2,7 +2,6 @@ const {validatePostData} = require("../validation/post");
 const models = require("../models/model");
 const { calculateReadTime } = require("../utility/readTime.js");
 const logger = require("../utility/logger");
-const post = require("../models/post");
 
 const createPost = async(req, res) => {
 	const {username} = req.user;
@@ -42,11 +41,10 @@ const createPost = async(req, res) => {
 };
 
 const viewOnePost = async(req, res) => {
-	const { username } = req.params;
+	const { postId } = req.params;
 
 	try {
-		const post = await models.post.findById({username});
-
+		const post = await models.post.findById(postId);
 		if (!post || post.state === "draft") {
 			return res.status(404).json({
 				status: false,
@@ -64,7 +62,7 @@ const viewOnePost = async(req, res) => {
 		await post.save();
 
 		return res.status(200).render("viewPost", ({
-			post, username, author: post.author
+			post, postId, author: post.author
 		}));
 	} catch (error) {
 		logger.error(`Error reading post: ${error.message}`);
