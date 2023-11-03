@@ -3,6 +3,7 @@ const models = require("../models/model");
 const bcrypt = require("bcrypt");
 const logger = require("../utility/logger");
 const { createToken } = require("../utility/jwt.js");
+const user = require("../models/user");
 
 const userSignup = async (req, res) => {
 	try {
@@ -94,7 +95,8 @@ const viewUser = async (req, res) => {
 	const { username } = req.params;
 
 	try {
-		const user = await models.user.findOne({ username });
+		const user = await models.user.findOne(username);
+		console.log(user);
 		if (!user) {
 			return res.status(404).json({
 				status: false,
@@ -103,7 +105,7 @@ const viewUser = async (req, res) => {
 		}
 
 		return res.status(200).render("viewProfile", ({
-			user, userId: user._id
+			userId: user._id, user
 		}));
 	} catch (error) {
 		logger.error(`Error locating user: ${error.message}`);
