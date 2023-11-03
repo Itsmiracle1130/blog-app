@@ -12,7 +12,7 @@
   <h1>Update your Post</h1>
   <p>Post ID: <%= postId %></p>
 
-  <form method="POST" action="/posts/update/<%= post._id %>">
+  <form method="POST" action="/posts/update/<%= postId %>">
     <label for="title">Edit Title:</label>
     <input type="text" id="title" name="title" value="<%= post.title %>"><br>
 
@@ -35,7 +35,7 @@
   </form>
 
   <a href="/posts">Back to Posts</a>
-  <a href="/posts/<%= post._id %>">Go Back</a>
+  <a href="/posts/<%= postId %>">Go Back</a>
 </body>
 
 </html>

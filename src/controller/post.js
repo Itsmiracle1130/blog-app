@@ -2,6 +2,7 @@ const {validatePostData} = require("../validation/post");
 const models = require("../models/model");
 const { calculateReadTime } = require("../utility/readTime.js");
 const logger = require("../utility/logger");
+const post = require("../models/post");
 
 const createPost = async(req, res) => {
 	const {username} = req.user;
@@ -20,13 +21,16 @@ const createPost = async(req, res) => {
 			description: value.description,
 			body: value.body,
 			tags: value.tags,
-			author: user._id.toString(),
+			author: username,
 			readingTime: calculateReadTime(value.body)
 		}); 
+		// user.posts.push(post._id);
+		user.save();
 		post.readCount += 1;
-		
+
+		await post.save();
 		return res.status(201).render("viewPost", ({
-			post
+			post, user, postId: post._id
 		}));
 	} catch (error) {
 		console.error("Error creating post", error);
@@ -38,10 +42,10 @@ const createPost = async(req, res) => {
 };
 
 const viewOnePost = async(req, res) => {
-	const { postId } = req.params;
+	const { username } = req.params;
 
 	try {
-		const post = await models.post.findOne({postId});
+		const post = await models.post.findById({username});
 
 		if (!post || post.state === "draft") {
 			return res.status(404).json({
@@ -55,8 +59,12 @@ const viewOnePost = async(req, res) => {
 				message: "Invalid Post Id"
 			});
 		}
+
+		post.readCount += 1;
+		await post.save();
+
 		return res.status(200).render("viewPost", ({
-			post, postId, author: post.author
+			post, username, author: post.author
 		}));
 	} catch (error) {
 		logger.error(`Error reading post: ${error.message}`);
@@ -67,7 +75,7 @@ const viewOnePost = async(req, res) => {
 	}
 };
 
-const viewPosts = async (req) => {
+const viewPosts = async (req) => {	
 	let { page, limit, search, order, orderBy } = req.query;
 	page = page || 1;
 	limit = limit || 20;
@@ -75,8 +83,8 @@ const viewPosts = async (req) => {
 	const startIndex = (page - 1) * limit;
 	const endIndex = page * limit;
 	
-	let query = { state: "published", deleted: false };
-  
+	let query = { state: "published" };
+	
 	if (search) {
 		const searchRegex = new RegExp(search, "i");
 		query.$or = [
@@ -98,7 +106,7 @@ const viewPosts = async (req) => {
 		.limit(endIndex)
 		.skip(startIndex)
 		.exec();
-	
+	// console.log("hi there", posts); 
 	if (posts.length < 1) {
 		return {
 			status: true,
@@ -137,9 +145,17 @@ const updatePost = async (req, res) => {
 				message: "Unauthorized user"
 			});
 		}
-		// post.state = "published";
-	
+		if (post.deleted) {
+			return res.status(204).json({
+				status: true,
+				message: "No content",
+			});
+		}
+		post.state = "published";
+
 		const result = await post.save();
+		
+	
 		return res.status(200).render("viewPost", ({
 			postId,
 			post: result
@@ -229,7 +245,7 @@ const ownerPost = async (req, res) => {
 			total,
 			totalPages,
 			currentPage: page,
-			posts
+			posts: posts
 		});
 	} catch (error) {
 		logger.error(`Error fetching posts: ${error.message}`);

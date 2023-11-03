@@ -1,5 +1,7 @@
 const express = require("express");
+const models = require("../models/model");
 const { userSignup, userLogin, viewUser, logout } = require("../controller/user.js");
+const {verifyToken} = require("../middleware/authenticate");
 
 const router = express.Router();
 
@@ -11,8 +13,11 @@ router.get("/login", (req, res) => {
 	res.render("login");
 });
 
-router.get("/dashboard", (req, res) => {
-	res.render("dashboard");
+router.get("/dashboard", verifyToken, async (req, res) => {
+	const user = await models.user.findOne({ email: req.user.email }).select("-password");
+	res.render("dashboard", ({
+		user
+	}));
 });
 
 router.post("/", userSignup);

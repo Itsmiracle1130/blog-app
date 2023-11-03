@@ -76,11 +76,9 @@ const userLogin = async (req, res) => {
 			});
 		}
 		const token = await createToken({ id: existingUser.id, username: existingUser.username, email: existingUser.email});
-		const user = await models.user.findOne({ email: existingUser.email }).select("-password");
+	
 		res.cookie("token", token, { httpOnly: true });
-		return res.status(200).render("dashboard", ({
-			user, token
-		}));
+		return res.status(200).redirect("./dashboard");
 	} catch (error) {
 		console.error(error.message);
 		return res.status(500).send({
