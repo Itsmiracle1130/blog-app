@@ -27,7 +27,6 @@ const userSignup = async (req, res) => {
 				message: "Account already exist"
 			});
 		}
-		console.log("working", value);
 		
 		const hashedPassword = await bcrypt.hash(value.password, 10);
 		const createdUser = await models.user.create({
@@ -79,7 +78,7 @@ const userLogin = async (req, res) => {
 			});
 		}
 		const token = await createToken({ id: existingUser.id, username: existingUser.username, email: existingUser.email});
-	
+		
 		res.cookie("token", token, { httpOnly: true });
 		return res.status(200).redirect("./dashboard");
 	} catch (error) {
@@ -91,12 +90,13 @@ const userLogin = async (req, res) => {
 	}
 };
 
+
 const viewUser = async (req, res) => {
 	const { username } = req.params;
 
 	try {
 		const user = await models.user.findOne(username);
-		console.log(user);
+
 		if (!user) {
 			return res.status(404).json({
 				status: false,
@@ -105,7 +105,7 @@ const viewUser = async (req, res) => {
 		}
 
 		return res.status(200).render("viewProfile", ({
-			userId: user._id, user
+			userId: user._id, user, username
 		}));
 	} catch (error) {
 		logger.error(`Error locating user: ${error.message}`);

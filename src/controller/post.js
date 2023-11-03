@@ -104,7 +104,6 @@ const viewPosts = async (req) => {
 		.limit(endIndex)
 		.skip(startIndex)
 		.exec();
-	// console.log("hi there", posts); 
 	if (posts.length < 1) {
 		return {
 			status: true,
